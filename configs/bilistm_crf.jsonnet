@@ -12,7 +12,7 @@ local common = import 'common.libsonnet';
     label_encoding: 'BIOUL',
     constrain_crf_decoding: true,
     calculate_span_f1: true,
-    dropout: dropout,
+    dropout: 0.5,
     include_start_end_transitions: false,
     text_field_embedder: {
       token_embedders: {
@@ -21,7 +21,7 @@ local common = import 'common.libsonnet';
           embedding_dim: 100,
           pretrained_file: 'https://allennlp.s3.amazonaws.com/datasets/glove/glove.6B.100d.txt.gz',
           trainable: true
-        }
+        },
         token_characters: {
           type: 'character_encoding',
           embedding: {
@@ -29,8 +29,8 @@ local common = import 'common.libsonnet';
           },
           encoder: {
             type: 'lstm',
-            input_size: '25',
-            hidden_size: '25',
+            input_size: 25,
+            hidden_size: 25,
             bidirectional: true,
             num_layers: 1,
             dropout: 0.5
@@ -40,7 +40,7 @@ local common = import 'common.libsonnet';
     },
     encoder:{
       type: 'lstm',
-      input_size: 25,
+      input_size: 150,
       hidden_size: 200,
       bidirectional: true,
       num_layers: 1,
@@ -53,10 +53,13 @@ local common = import 'common.libsonnet';
   },
   trainer: {
     optimizer:{
-      type: sgd,
+      type: 'sgd',
       lr: 0.015,
     },
-    num_epochs: 150,
+    num_epochs: 100,
     cuda_device: 0
-  }
+  },
+  /* "distributed": { */
+      /* "cuda_devices": [0, 1], */
+  /* } */
 }
