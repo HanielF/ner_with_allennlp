@@ -48,7 +48,7 @@ local common = import 'common.libsonnet';
     }
   },
   data_loader:{
-    batch_size: 32,
+    batch_size: 512,
     shuffle: true
   },
   trainer: {
@@ -57,7 +57,7 @@ local common = import 'common.libsonnet';
       lr: 0.015,
     },
     num_epochs: 100,
-    cuda_device: 0
+    cuda_device: 1
   },
   /* "distributed": { */
       /* "cuda_devices": [0, 1], */
