@@ -1,11 +1,11 @@
 {
   // allennlp-source-code/data/dataset_readers/conll2003
-  BaseCoNLL2003DatasetReader::{
+  BaseCoNLL2003DatasetReader()::{
     type: 'conll2003',
     tag_label: 'ner',
     coding_scheme: 'BIOUL',
     token_indexers: {
-      // 两个namespace的indexer
+      // indexer in tokens and token_characters namespaces
       tokens: {
         // allennlp-source-code/data/token_indexers/single_id_token_indexer.py
         type: 'single_id',
