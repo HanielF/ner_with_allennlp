@@ -19,17 +19,18 @@
         min_padding_length: 3,
       },
     },
-  },
-
-
-  BERTDatasetReader(bert_model, max_length)::{
+  }(),
+  TransformerCoNLL2003DatasetReader(model_name, max_length)::{
     type: 'conll2003',
     tag_label: 'ner',
     coding_scheme: 'BIOUL',
     token_indexers: {
       tokens: {
+        // 输入的是words但是Transformer需要wordpieces，有不一致的情况
+        // pretrained_transformer_mismatched indexer可以将单个word分成wordpieces
+        // embedding之后拼在一起组成single word embedding
         type: 'pretrained_transformer_mismatched',
-        model_name: bert_model,
+        model_name: model_name,
         max_length: max_length,
       },
     },
