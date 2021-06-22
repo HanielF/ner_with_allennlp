@@ -10,7 +10,7 @@ model=$1
 
 if [ $# -eq 2 ]
 then
-  if [ $2 == 'tmp' -o $2 == 'temp'] 
+  if [ "$2" == "tmp" -o "$2" == "temp" ]
   then
     full_path="${model}_$2"
     config="./configs/${model}.jsonnet"
@@ -28,7 +28,6 @@ serial_dir="`pwd`/models/model_$full_path"
 echo "==> full path: $full_path"
 echo "==> config file: $config"
 echo "==> serialization dir: $serial_dir"
-# exit
 
 if [ -d $serial_dir ];then
   echo "==> remove existing serial folder"
