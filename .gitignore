@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 allennlp-NER
 .DS_Store
+
+*.th
+model.tar.gz
