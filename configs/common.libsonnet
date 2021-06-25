@@ -19,7 +19,7 @@
         min_padding_length: 3,
       },
     },
-  }(),
+  },
   TransformerCoNLL2003DatasetReader(model_name, max_length)::{
     type: 'conll2003',
     tag_label: 'ner',
@@ -34,4 +34,5 @@
         max_length: max_length,
       },
     },
+  }
 }
