@@ -62,7 +62,7 @@ Algorithms can be included using the commands as shown in algorithm \ref{alg:euc
     \State 1) word embedding with BERT-base;
     \State  2) bidirectional LSTM-CRF model  pass for forward and backward state LSTM;
     \State 3) CRF layer forward and backward pass;
-    \State 3) update parameters;
+    \State 4) update parameters;
     \ENDFOR
 \ENDFOR
     
