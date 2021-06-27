@@ -50,9 +50,7 @@ NER全称是命名实体识别（Named Entity Recognition, NER），目标是识
 
 4、trainer
 
-训练器相关的参数的设置。
-
-**训练时作者使用SGD（随机梯度下降法）以0.01的学习率优化参数，以5.0作为梯度的阈值。 LSTM-CRF模型用前向和后向LSTM各一个独立层，维度为100，并加入了剔除率为0.5的dropout。**
+训练器相关的参数的设置，使用SGD（随机梯度下降法）以0.015的学习率优化参数进行训练。
 
 **二、baseline介绍**
 
@@ -62,7 +60,7 @@ NER全称是命名实体识别（Named Entity Recognition, NER），目标是识
 
 
 
-![image-20210627092728258](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627092728258.png)
+<img src="C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627092728258.png" alt="image-20210627092728258" style="zoom:67%;" />
 
 
 
@@ -144,7 +142,7 @@ BERT预训练模型的数据集包括200k训练单词，其中标注为五类：
 
 ![img](https://img-blog.csdnimg.cn/20190523180916640.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDc0MDA4Mg==,size_16,color_FFFFFF,t_70)
 
-BERT层学到了句子中**每个字符最可能对应的实体标注**是什么，这个过程是考虑到了每个字符左边和右边的上下文信息的，通过引入CRF解决输出的最大分数对应的实体标注依然可能有误的问题。由BERT学习序列的状态特征，从而得到一个状态分数，该分数直接输入到CRF层，省去了人工设置状态特征模板。Bert+CRF中，状态分数是根据训练得到的BERT模型的输出计算出来的，转移分数是从CRF层提供的转移分数矩阵得到的。
+BERT层学到了句子中每个字符最可能对应的实体标注是什么，这个过程是考虑到了每个字符左边和右边的上下文信息的，通过引入CRF解决输出的最大分数对应的实体标注依然可能有误的问题。由BERT学习序列的状态特征，从而得到一个状态分数，该分数直接输入到CRF层，省去了人工设置状态特征模板。Bert+CRF中，状态分数是根据训练得到的BERT模型的输出计算出来的，转移分数是从CRF层提供的转移分数矩阵得到的。
 
 **三、伪代码**
 
@@ -164,7 +162,7 @@ BERT层学到了句子中**每个字符最可能对应的实体标注**是什么
 
 我们的模型可以通过 GloVe 嵌入获得 91.22 的最佳 F1 分数。使用了各种机器学习分类器的组合，根据表1结果，BLSTM-CRF模型明显优于 CRF 模型，表明句子特征提取对于命名实体识别任务很重要。BiLSTM+CRF 略微优于 CNN+BiLSTM+CRF，可能是使用了GloVe 不同的词嵌入。然而，BERT+BiLSTM+CRF 明显优于 BiLSTM+CRF，预训练模型BERT的引入大大提高了准确度，而针对BERT模型的改进模型RoBERTa性能也有所提升。
 
-![image-20210627134837681](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627134837681.png)
+![image-20210627153918406](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627153918406.png)
 
 ## 总结
 
