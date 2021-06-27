@@ -34,16 +34,154 @@ NER全称是命名实体识别（Named Entity Recognition, NER），目标是识
 
 ### CRF
 
+**一、框架**
+
+1、data
+
+数据读取预处理部分，主要包括tokens表示word level的处理，具体为对词进行小写处理，token_characters表示character-level的处理，type是dataset_reader的读取类型，设置为conll2003。
+
+2、embedding
+
+模型的第一层是词嵌入层，利用随机初始化的embedding矩阵将句子中的每个字由one-hot向量映射为低维稠密的字向量，其中每个维度都表示隐含的特征维度。单词的字符级表示与预训练得到的词向量连在一起作为最终的词表示。数据预处理采用word level进行，label的编码格式设置为BIOUL。
+
+3、Tag decoder
+
+模型的第二层是CRF层，进行句子级的序列标注。CRF层的参数是标签之间转移得分矩阵，进而在为一个位置进行标注的时候可以利用此前已经标注过的标签。条件随机场CRF利用全局信息进行标记用于解码。在预测当前标签时使用邻居的标签信息NER中，CRF模型关注整个句子的结构，是一个输出和输出直接相连的无向图，产生更高精度的标签。
+
+4、trainer
+
+训练器相关的参数的设置。
+
+**训练时作者使用SGD（随机梯度下降法）以0.01的学习率优化参数，以5.0作为梯度的阈值。 LSTM-CRF模型用前向和后向LSTM各一个独立层，维度为100，并加入了剔除率为0.5的dropout。**
+
+**二、baseline介绍**
+
+条件随机场CRF是一种基于统计的序列标记和分割数据的方法，是用于序列标注问题的无向图模型，在给定需要标记的观测序列条件下，计算序列的联合概率。条件随机场的建立过程中，首先定义一个特征函数集，每个特征函数都以标注序列作为输入，提取特征作为输出.
+
+条件随机场使用对数线性模型来计算给定观测序列下状态序列的条件概率$p(s|x;w)$。w是条件随机场模型的参数，可以视为每个特征函数的权重。CRF模型的训练其实就是对参数 w 的估计。模型训练结束之后，对给定的观测序列 x ，可得到其最优状态序列，解码后得到最终结果。
+
+
+
+![image-20210627092728258](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627092728258.png)
+
+
+
+在预测当前标签时使用邻居的标签信息NER中，CRF模型关注整个句子的结构，是一个输出和输出直接相连的无向图，产生更高精度的标签。同时，使用条件随机场CRF可解决tagging之间不独立的问题。对每种生成的tag序列，我们采用打分的方式代表该序列的好坏，分数越高代表当前生成的tag序列表现效果越好。
+
+**三、伪代码**
+
+![image-20210627134236115](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627134236115.png)
+
+
+
 ### BiLSTM+CRF
 
 ### CNN+BiLSTM+CRF
 
+**一、框架**
+
+1、data
+
+数据读取预处理部分，主要包括word level的处理和character-level的处理，具体处理同上。
+
+2、embedding
+
+模型的第一层是词嵌入层，利用预训练的embedding矩阵将句子中的每个字 由one-hot向量映射为低维稠密的字向量。输入的分布式通过把词映射到低维空间的稠密实值向量，其中每个维度都表示隐含的特征维度。词级别tokens采用glove embedding，字符级别采用multi-layer CNN 随机初始化，选择三元文法。通过卷积CNN得到的单词的字符级表示与预训练得到的词向量连在一起作为最终的词表示。
+
+3、encoder
+
+模型的第二层是双向LSTM层，自动提取句子特征。将一个句子的各个字的char embedding序列 (x1,x2,…,xn)作为双向LSTM各个时间步的输入，再将正向LSTM输出的隐状态序列 (h1⟶,h2⟶,…,hn⟶)与反向LSTM的 (h1⟵,h2⟵,…,hn⟵)在各个位置输出的隐状态进行按位置拼接得到完整的隐状态序列；在设置dropout后，接入一个线性层，将隐状态向量从m维映射到k维，k是标注集的标签数，从而得到自动提取的句子特征，记作矩阵P。可以把 pi的每一维pij都视作将字xi分类到第j个标签的打分值，如果再对 P进行Softmax的话，就相当于对各个位置独立进行k类分类。但是这样对各个位置进行标注时无法利用已经标注过的信息，所以接下来将接入一个CRF层来进行标注。
+
+4、Tag decoder
+
+模型的第三层是CRF层，进行句子级的序列标注。条件随机场CRF利用全局信息进行标记用于解码。在预测当前标签时使用邻居的标签信息NER中，CRF模型关注整个句子的结构，是一个输出和输出直接相连的无向图，产生更高精度的标签。
+
+5、trainer
+
+训练器相关的参数的设置。具体训练时使用SGD（随机梯度下降法）以0.015的学习率优化参数。 LSTM-CRF模型用前向和后向LSTM各一个独立层，维度为330，并加入了剔除率为0.5的dropout。validation_metric使用验证集矩阵计算F1精确度，evaluate_on_test在测试集上进行评估。
+
+**二、baseline介绍**
+
+CNN+BiLSTM+CRF用整个句子的信息来对词进行标记，其网络结构如下图所示，句子经过 embedding 层，一个 word 被表示为 N 维度的向量，随后利用 CNN 提取单词的字符级表示，字符级表示与 word 级表示连在一起作为最终的词表示。卷积层的输出大小与输入的句子长度有关，为了获取固定维度的句子表示，使用最大池化操作得到整个句子的全局特征。最后 tag decoder 使用该句子表示来得到标签的概率分布。
+
+<img src="https://imgconvert.csdnimg.cn/aHR0cHM6Ly9tbWJpei5xcGljLmNuL21tYml6X3BuZy9WQmNEMDJqRmhnbWlhYUFrdDB5dVF5VVNiZFlEakFSQWliTHFpYjNlNDNZOGlheE9ZTFM4aWJ3eVBXWkRWZE9LRHRDZ09tWFppY2ZjQW9GNURqTnZvYkk1TXdCZy82NDA?x-oss-process=image/format,png" alt="img" style="zoom:50%;" />
+
+**三、伪代码**
+
+![image-20210627134555427](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627134555427.png)
+
 ### BERT+BiLSTM+CRF
+
+**一、框架**
+
+1、data
+
+数据读取预处理部分，主要包括 tokens 和 token_characters，进行词级别的处理和字符级别的处理，另外加入预训练模型transformer中的bert-base-cased。
+
+2、embedding
+
+模型的第一层是词嵌入层，利用预训练的embedding矩阵将句子中的每个字 由one-hot向量映射为低维稠密的字向量。输入的分布式通过把词映射到低维空间的稠密实值向量，其中每个维度都表示隐含的特征维度。词级别tokens采用预训练模型bert（BERTbase: L=12, H=768, A=12, Total Parameters=110M）进行embedding处理。通过LSTM得到的单词的字符级表示与预训练得到的词向量连在一起作为最终的词表示。
+
+3、encoder
+
+模型的第二层是双向LSTM层，自动提取句子特征。具体过程同CNN+BiLSTM+CRF。
+
+4、Tag decoder
+
+模型的第三层是CRF层，进行句子级的序列标注。具体过程同CNN+BiLSTM+CRF。
+
+5、trainer
+
+训练器相关的参数的设置。具体训练时使用ADAM以5e-07的学习率优化参数，以5.0作为梯度的阈值。validation_metric使用验证集矩阵计算F1精确度，evaluate_on_test在测试集上进行评估。
+
+**二、baseline介绍**
+
+BERT+BiLSTM+CRF中，BERT负责学习输入句子中每个字和符号到对应的实体标签的规律，而CRF负责学习相邻实体标签之间的转移规则。
+
+![image-20210627103717625](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627103717625.png)
+
+BERT预训练模型的数据集包括200k训练单词，其中标注为五类： Person, Organization, Location,Miscellaneous, or Other (non-named entity)，在微调的时候，在BERT上加了一个分类层来判断是否是名字的一部分，如下图所示：
+
+![img](https://img-blog.csdnimg.cn/20190523180916640.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDc0MDA4Mg==,size_16,color_FFFFFF,t_70)
+
+BERT层学到了句子中**每个字符最可能对应的实体标注**是什么，这个过程是考虑到了每个字符左边和右边的上下文信息的，通过引入CRF解决输出的最大分数对应的实体标注依然可能有误的问题。由BERT学习序列的状态特征，从而得到一个状态分数，该分数直接输入到CRF层，省去了人工设置状态特征模板。Bert+CRF中，状态分数是根据训练得到的BERT模型的输出计算出来的，转移分数是从CRF层提供的转移分数矩阵得到的。
+
+**三、伪代码**
+
+![image-20210627134608034](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627134608034.png)
 
 ### RoBERTa+BiLSTM+CRF
 
 ## 实验结果分析
 
+### 数据集
+
+命名实体识别NER任务中，我们使用来自 CoNLL 2003 共享的的英文数据进行实验，该数据集包含四种不同类型的命名实体：PERSON、LOCATION、ORGANIZATION 和 MISC。 我们使用 BIOUL编码格式，因为之前的研究中相对于默认的BIO编码格式存在显著改进。
+
+### 实验
+
+我们将所选的六个模型的性能进行比较——HMM，CRF，BiLSTM，BiLSTM+CRF，CNN+BiLSTM+CRF，BERT+BiLSTM+CRF，RoBERTa+BiLSTM+CRF对字符级信息进行建模。除传统机器学习模型之外，基于所有这些模型都使用斯坦福大学的 GloVe 词嵌入和相同的超参数运行，如表 1 所示。 
+
+我们的模型可以通过 GloVe 嵌入获得 91.22 的最佳 F1 分数。使用了各种机器学习分类器的组合，根据表1结果，BLSTM-CRF模型明显优于 CRF 模型，表明句子特征提取对于命名实体识别任务很重要。BiLSTM+CRF 略微优于 CNN+BiLSTM+CRF，可能是使用了GloVe 不同的词嵌入。然而，BERT+BiLSTM+CRF 明显优于 BiLSTM+CRF，预训练模型BERT的引入大大提高了准确度，而针对BERT模型的改进模型RoBERTa性能也有所提升。
+
+![image-20210627134837681](C:\Users\YMX\AppData\Roaming\Typora\typora-user-images\image-20210627134837681.png)
+
 ## 总结
 
 ## 参考文献
+
+[1] A survey of named entity recognition and classification
+
+[2] A survey on deep learning for named entity recognition
+
+[3] Neural architectures for named entity recognition
+
+[4] Named entity recognition with bidirectional lstm-cnns
+
+[5] Bidirectional lstm-crf models for sequence tagging
+
+[6] End-to-end sequence labeling via bidirectional lstm-cnns-crf
+
+[7] Semi-supervised multitask learning for sequence labeling
+
+[8] Bert: Pretraining of deep bidirectional transformers for language understanding
