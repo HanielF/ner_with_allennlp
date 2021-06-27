@@ -1,0 +1,75 @@
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+\title{Euclid's Algorithm: An example of how to write algorithms in \LaTeX{}}
+
+\author{write\LaTeX{}}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Example Algorithm}
+
+Algorithms can be included using the commands as shown in algorithm \ref{alg:euclid}.
+
+\begin{algorithm} 
+\caption{CRF model training procedure}
+\begin{algorithmic}[1]
+\For{each epoch}  
+	\For{each batch} 
+    \State 1) word embedding with glove;
+    \State 2) CRF layer forward and backward pass;
+    \State 3) update parameters;
+    \ENDFOR
+\ENDFOR
+    
+
+
+
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm} 
+\caption{LSTM-CNNs-CRF model training procedure}
+\begin{algorithmic}[1]
+\For{each epoch}  
+	\For{each batch} 
+    \State 1) word embedding with glove;
+    \State 2) encoding with CNN;
+    \State  3) bidirectional LSTM-CRF model  pass for forward and backward state LSTM;
+    \State 4) CRF layer forward and backward pass;
+    \State 5) update parameters;
+    \ENDFOR
+\ENDFOR
+    
+
+
+
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm} 
+\caption{BERT-LSTM-CRF model training procedure}
+\begin{algorithmic}[1]
+\For{each epoch}  
+	\For{each batch} 
+    \State 1) word embedding with BERT-base;
+    \State  2) bidirectional LSTM-CRF model  pass for forward and backward state LSTM;
+    \State 3) CRF layer forward and backward pass;
+    \State 4) update parameters;
+    \ENDFOR
+\ENDFOR
+    
+
+
+
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}
