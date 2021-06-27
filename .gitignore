@@ -127,6 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+<<<<<<< .merge_file_a08564
+=======
+allennlp-NER
+.DS_Store
+>>>>>>> .merge_file_a11992
 
 *.th
 model.tar.gz
