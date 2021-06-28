@@ -93,6 +93,12 @@ class hmm_tagger:
         self.observation_mat = self.get_observation_matrix(self.data, self.label, self.word2idx, self.lab2idx)
         self.logger.info("Observation matrix shape: {}".format(self.observation_mat.shape))
 
+        # metrics
+        self.tags_to_spans_function = bioul_tags_to_spans
+        self._true_positives = defaultdict(int) #: Dict[str, int]
+        self._false_positives = defaultdict(int) #: Dict[str, int]
+        self._false_negatives = defaultdict(int) #: Dict[str, int]
+
         self.logger.info("Completed the training of HMM tagger")
 
     def read_data(self, path):
@@ -314,6 +320,86 @@ class hmm_tagger:
         res = [idx2lab[x] for x in res_lab]
         return res
 
+    def get_metric(self, label, predict, reset: bool = False):
+        """
+
+        paras:
+            label: 2dList(str) e.g. [["B-PER", "L-PER", "O"]]
+            predict: 2dList(str) e.g. [["B-PER", "L-PER", "O"]]
+            shape as (samples, length)
+
+        returns
+
+        `Dict[str, float]`
+            A Dict per label containing following the span based metrics:
+            - precision : `float`
+            - recall : `float`
+            - f1-measure : `float`
+
+            Additionally, an `overall` key is included, which provides the precision,
+            recall and f1-measure for all spans.
+        """
+
+        for i in range(len(label)):
+            i_lab = label[i]
+            i_pre = predict[i]
+
+            predicted_spans = self.tags_to_spans_function(i_pre)
+            gold_spans = self.tags_to_spans_function(i_lab)
+
+            for span in predicted_spans:
+                if span in gold_spans:
+                    self._true_positives[span[0]] += 1
+                    gold_spans.remove(span)
+                else:
+                    self._false_positives[span[0]] += 1
+            # These spans weren't predicted.
+            for span in gold_spans:
+                self._false_negatives[span[0]] += 1
+
+        all_tags: Set[str] = set()
+        all_tags.update(self._true_positives.keys())
+        all_tags.update(self._false_positives.keys())
+        all_tags.update(self._false_negatives.keys())
+        all_metrics = {}
+        for tag in all_tags:
+            precision, recall, f1_measure = self._compute_metrics(
+                self._true_positives[tag], self._false_positives[tag], self._false_negatives[tag]
+            )
+            precision_key = "precision" + "-" + tag
+            recall_key = "recall" + "-" + tag
+            f1_key = "f1-measure" + "-" + tag
+            all_metrics[precision_key] = precision
+            all_metrics[recall_key] = recall
+            all_metrics[f1_key] = f1_measure
+
+        # Compute the precision, recall and f1 for all spans jointly.
+        precision, recall, f1_measure = self._compute_metrics(
+            sum(self._true_positives.values()),
+            sum(self._false_positives.values()),
+            sum(self._false_negatives.values()),
+        )
+        all_metrics["precision-overall"] = precision
+        all_metrics["recall-overall"] = recall
+        all_metrics["f1-measure-overall"] = f1_measure
+        if reset:
+            self.reset_metrics()
+        return all_metrics
+
+    @staticmethod
+    def _compute_metrics(true_positives: int, false_positives: int, false_negatives: int):
+        precision = true_positives / (true_positives + false_positives + 1e-13)
+        recall = true_positives / (true_positives + false_negatives + 1e-13)
+        f1_measure = 2.0 * (precision * recall) / (precision + recall + 1e-13)
+        return precision, recall, f1_measure
+
+    def reset_metrics(self):
+        self._true_positives = defaultdict(int)
+        self._false_positives = defaultdict(int)
+        self._false_negatives = defaultdict(int)
+
+
+
 
 if __name__=='__main__':
     train_path = './data/eng.train'
@@ -335,6 +421,11 @@ if __name__=='__main__':
     logger.info("Evaluate with: {}".format(os.path.basename(val_path)))
     val_lab, val_res = tagger.evaluate(val_path)
 
+    # compute metrics
+    val_metrics = tagger.get_metric(val_lab, val_res)
+    logger.info("Validation metrics:")
+    logger.info(str(val_metrics))
+
     with open(val_out, 'w') as fout:
         fout.write("label\tpredict\n")
         for i in range(len(val_lab)):
@@ -345,6 +436,11 @@ if __name__=='__main__':
     # test phase
     logger.info("Evaluate with: {}".format(os.path.basename(test_path)))
     test_lab, test_res = tagger.evaluate(test_path)
+
+    # compuate metrics
+    test_metrics = tagger.get_metric(test_lab, test_res)
+    logger.info("Test metrics:")
+    logger.info(str(test_metrics))
 
     with open(test_out, 'w') as fout:
         fout.write("label\tpredict\n")
