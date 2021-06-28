@@ -9,6 +9,9 @@
 import numpy as np
 import os
 from collections import Counter
+from collections import defaultdict
+#  from allennlp.data.dataset_readers.dataset_utils.span_utils import bioul_tags_to_spans
+from allennlp.data.dataset_readers.dataset_utils.span_utils import InvalidTagSequence
 
 import logging
 def get_logger(log_path=None, streamhandler=True, filehandler=False):
@@ -94,7 +97,7 @@ class hmm_tagger:
         self.logger.info("Observation matrix shape: {}".format(self.observation_mat.shape))
 
         # metrics
-        self.tags_to_spans_function = bioul_tags_to_spans
+        #  self.tags_to_spans_function = bioul_tags_to_spans
         self._true_positives = defaultdict(int) #: Dict[str, int]
         self._false_positives = defaultdict(int) #: Dict[str, int]
         self._false_negatives = defaultdict(int) #: Dict[str, int]
@@ -273,6 +276,7 @@ class hmm_tagger:
         assert os.path.exists(val_path),"Validation dataset does not exists!" 
 
         self.val_data, self.val_label = self.read_data(val_path)
+
         self.val_res = []
         self.logger.info("Evaluate sample cnt: {}".format(len(self.val_data)))
 
@@ -344,8 +348,14 @@ class hmm_tagger:
             i_lab = label[i]
             i_pre = predict[i]
 
-            predicted_spans = self.tags_to_spans_function(i_pre)
-            gold_spans = self.tags_to_spans_function(i_lab)
+            #  predicted_spans = self.tags_to_spans_function(i_pre)
+            #  gold_spans = self.tags_to_spans_function(i_lab)
+            self.logger.info("label sequence:{}".format(i_lab))
+            self.logger.info("predict sequence:{}".format(i_pre))
+            predicted_spans = self.bioul_tags_to_spans(i_pre)
+            self.logger.info("predicted_span:{}".format(predicted_spans))
+            gold_spans = self.bioul_tags_to_spans(i_lab)
+            self.logger.info("gold_spans:{}".format(gold_spans))
 
             for span in predicted_spans:
                 if span in gold_spans:
@@ -397,6 +407,59 @@ class hmm_tagger:
         self._true_positives = defaultdict(int)
         self._false_positives = defaultdict(int)
         self._false_negatives = defaultdict(int)
+
+    def bioul_tags_to_spans(self, tag_sequence, classes_to_ignore = None):
+        """
+        Given a sequence corresponding to BIOUL tags, extracts spans.
+        Spans are inclusive and can be of zero length, representing a single word span.
+        Ill-formed spans are not allowed and will raise `InvalidTagSequence`.
+        This function works properly when the spans are unlabeled (i.e., your labels are
+        simply "B", "I", "O", "U", and "L").
+
+        # Parameters
+
+        tag_sequence : `List[str]`, required.
+            The tag sequence encoded in BIOUL, e.g. ["B-PER", "L-PER", "O"].
+        classes_to_ignore : `List[str]`, optional (default = `None`).
+            A list of string class labels `excluding` the bio tag
+            which should be ignored when extracting spans.
+
+        # Returns
+
+        spans : `List[TypedStringSpan]`
+            The typed, extracted spans from the sequence, in the format (label, (span_start, span_end)).
+        """
+        spans = []
+        classes_to_ignore = classes_to_ignore or []
+        index = 0
+        while index < len(tag_sequence):
+            label = tag_sequence[index]
+            if label[0] == "U":
+                spans.append((label.partition("-")[2], (index, index)))
+            elif label[0] == "B":
+                start = index
+                span_flag = True
+                while label[0] != "L":
+                    index += 1
+                    if index >= len(tag_sequence):
+                        #  raise InvalidTagSequence(tag_sequence)
+                        span_flag = False
+                        break
+                    label = tag_sequence[index]
+                    if not (label[0] == "I" or label[0] == "L"):
+                        #  raise InvalidTagSequence(tag_sequence)
+                        span_flag = False
+                        break
+                if span_flag:
+                    spans.append((label.partition("-")[2], (start, index)))
+            #  else:
+                #  if label != "O":
+                    #  print(label)
+                    #  raise InvalidTagSequence(tag_sequence)
+                    #  continue
+            index += 1
+        return [span for span in spans if span[0] not in classes_to_ignore]
+
 
 
 
