@@ -1,0 +1,43 @@
+\documentclass[preprint,floatfix] {revtex4} 
+\newcommand{\rvec}{\mathrm {\mathbf {r}}} 
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{color, soul}
+
+\begin{document}
+
+\renewcommand{\thetable}{S\arabic{table}}
+
+%%\begin{center}
+%%\textbf{\large Supplemental Materials}
+%%\end{center}
+
+\begingroup
+\squeezetable
+\begin{table}
+\large 
+\caption {\label{tab:table1} Comparison of tagging accuracy and F1 scores of different models for NER.} 
+\begin{ruledtabular}
+\begin{tabular}{lcc}
+ System & tagging accuracy & F1 scores \\                                      
+\hline
+
+ HMM                &       ?? & ??          \\
+ CRF                &       92.00 & 69.36          \\
+ BiLSTM+CRF         &       96.89 & 85.15        \\
+ CNN+BiLSTM+CRF     &       96.65 & 84.69          \\
+ BERT+BiLSTM+CRF    &       97.95 & 90.44         \\
+ RoBERTa+BiLSTM+CRF &       98.02 & 91.22          
+\end{tabular}
+\end{ruledtabular}
+
+\end{table}
+\endgroup
+
+
+\end{document}
+
+
+
