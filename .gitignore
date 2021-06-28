@@ -132,3 +132,4 @@ allennlp-NER
 
 *.th
 model.tar.gz
+.vscode
