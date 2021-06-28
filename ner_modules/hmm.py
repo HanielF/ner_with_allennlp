@@ -52,6 +52,8 @@ class hmm_tagger:
     def __init__(self, conll_path, max_word_num=0, logger=None):
         if logger is None:
             self.logger = get_logger()
+        else:
+            self.logger = logger
 
         self.logger.info("Init HMM tagger with {}".format(conll_path))
 
@@ -65,7 +67,7 @@ class hmm_tagger:
         self.logger.info("First sample label: {}".format(self.label[0]))
 
         data_set = set([i for x in self.data for i in x])
-        if max_word_num is 0:
+        if max_word_num == 0 or max_word_num is None:
             self.max_word_num = len(data_set)
         self.max_word_num = max_word_num
         self.logger.info("words number of dataset: {}, max_word_num: {}".format(len(data_set), max_word_num))
@@ -266,6 +268,7 @@ class hmm_tagger:
 
         self.val_data, self.val_label = self.read_data(val_path)
         self.val_res = []
+        self.logger.info("Evaluate sample cnt: {}".format(len(self.val_data)))
 
         for line in self.val_data:
             predicted_tag = self.predict(line, self.word2idx, self.idx2lab, self.transition_mat, self.observation_mat, self.init_mat)
@@ -315,22 +318,38 @@ class hmm_tagger:
 if __name__=='__main__':
     train_path = './data/eng.train'
     val_path = './data/eng.testa'
+    test_path = './data/eng.testb'
+    base_path = './models/model_hmm'
+    val_out = os.path.join(base_path, 'val_output.txt')
+    test_out = os.path.join(base_path, 'test_output.txt')
+    log_path = './models/model_hmm/hmm.log'
+    logger = get_logger(log_path=log_path, streamhandler=True, filehandler=True)
 
-    max_word_num = 21009
+    #  max_word_num = 21009
+    max_word_num = None
 
     # train phase
-    tagger = hmm_tagger(train_path, max_word_num)
-    
-    # predict phase
-    val_lab, val_res = tagger.evaluate(val_path)
+    tagger = hmm_tagger(conll_path=train_path, max_word_num=max_word_num, logger=logger)    
 
-    val_base = os.path.dirname(val_path)
-    val_out = os.path.join(val_base, 'val_output.txt')
+    # evaluate phase
+    logger.info("Evaluate with: {}".format(os.path.basename(val_path)))
+    val_lab, val_res = tagger.evaluate(val_path)
 
     with open(val_out, 'w') as fout:
         fout.write("label\tpredict\n")
         for i in range(len(val_lab)):
             for j in range(len(val_lab[i])):
                 fout.write("{}\t{}\n".format(val_lab[i][j], val_res[i][j]))
+            fout.write("\n")
+
+    # test phase
+    logger.info("Evaluate with: {}".format(os.path.basename(test_path)))
+    test_lab, test_res = tagger.evaluate(test_path)
+
+    with open(test_out, 'w') as fout:
+        fout.write("label\tpredict\n")
+        for i in range(len(test_lab)):
+            for j in range(len(test_lab[i])):
+                fout.write("{}\t{}\n".format(test_lab[i][j], test_res[i][j]))
             fout.write("\n")
 
