@@ -534,3 +534,4 @@ if __name__ == '__main__':
             for j in range(len(test_lab[i])):
                 fout.write("{}\t{}\n".format(test_lab[i][j], test_res[i][j]))
             fout.write("\n")
+
