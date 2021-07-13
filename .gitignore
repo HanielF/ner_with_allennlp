@@ -132,5 +132,5 @@ allennlp-NER
 
 *.th
 model.tar.gz
-model_hmm
-test*
+.vscode
+
