@@ -257,6 +257,7 @@ class HMM:
         true_cnt = 0
         all_cnt = 0
 
+        cls_cnt = {x:0 for x in ['LOC', 'PER', 'ORG','MISC']}
         for i in range(len(label)):
             i_lab = self.to_bioul(label[i], 'IOB1')
             try:
@@ -272,6 +273,9 @@ class HMM:
             predicted_spans = self.bioul_tags_to_spans(i_pre)
             gold_spans = self.bioul_tags_to_spans(i_lab)
 
+            for span in gold_spans:
+                cls_cnt[span[0]]+=1
+
             for span in predicted_spans:
                 if span in gold_spans:
                     self._true_positives[span[0]] = self._true_positives.get(span[0], 0) + 1
@@ -281,6 +285,7 @@ class HMM:
             # These spans weren't predicted.
             for span in gold_spans:
                 self._false_negatives[span[0]] = self._false_negatives.get(span[0], 0) + 1
+        self.logger.info("class number: {}".format(cls_cnt))
 
         all_tags: Set[str] = set()
         all_tags.update(self._true_positives.keys())
@@ -289,7 +294,7 @@ class HMM:
         all_metrics = {}
         self.logger.info(all_tags)
         self.logger.info("self._true_positives: {}".format(self._true_positives))
-        self.logger.info("self._false_negatives: {}".format(self._false_negatives))
+        self.logger.info("self._false_positives: {}".format(self._false_positives))
         self.logger.info("self._false_negatives: {}".format(self._false_negatives))
         #  pdb.set_trace()
         for tag in all_tags:
