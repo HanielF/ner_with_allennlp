@@ -10,12 +10,17 @@
 ├── models # 生成的模型目录，不包含大模型，只保存了训练日志和结果
 │   ├── model_bert # BERT+BiLSTM+CRF
 │   ├── model_bilstm_crf # BiLSTM+CRF
+│   ├── model_bilstm_crf_focalloss # BiLSTM+CRF+FocalLoss
 │   ├── model_cnn # CNN+BiLSTM+CRF
 │   ├── model_crf # CRF only
+│   ├── model_crf_facolloss # CRF with FocalLoss
 │   ├── model_hmm # HMM only
 │   └── model_roberta_crf # RoBERTa+BiLSTM+CRF
+│   └── model_roberta_crf_focalloss # RoBERTa+BiLSTM+CRF+FocalLoss
 ├─── ner_modules # 包含HMM和CRF tagger
 │   ├── crf_tagger.py # CRF tagger
+│   ├── crf_tagger_facol_loss.py # CRF tagger with Focal Loss
+│   ├── conditional_random_field_2.py # Crf with Focal Loss
 │   ├── hmm_pre.py # 第一版HMM模型
 │   └── hmm.py # 第二版HMM模型
 └── report # 项目报告
