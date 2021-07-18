@@ -16,8 +16,8 @@
 │   └── model_roberta_crf # RoBERTa+BiLSTM+CRF
 ├─── ner_modules # 包含HMM和CRF tagger
 │   ├── crf_tagger.py # CRF tagger
-│   ├── hmm.py # 第一版HMM模型
-│   └── hmm2.py # 第二版HMM模型
+│   ├── hmm_pre.py # 第一版HMM模型
+│   └── hmm.py # 第二版HMM模型
 └── report # 项目报告
 ```
 
