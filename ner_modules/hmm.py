@@ -5,10 +5,36 @@ import math
 from collections import Counter
 from collections import defaultdict
 import pdb
-#  from allennlp.data.dataset_readers.dataset_utils.span_utils import bioul_tags_to_spans
+import os
+import logging
+
+def get_logger(log_path=None, streamhandler=True, filehandler=False):
+    if streamhandler is False and filehandler is False:
+        return None
+
+    logger = logging.getLogger(__name__)
+    fmt_str = ('%(asctime)s.%(msecs)03d %(levelname)7s ' '[%(thread)d][%(process)d] %(message)s')
+    fmt = logging.Formatter(fmt_str, datefmt='%H:%M:%S')
+
+    fh = ch = None
+    if filehandler is True:
+        fh = logging.FileHandler(log_path, 'w')
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(fmt)
+        logger.addHandler(fh)
+
+    if streamhandler is True:
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
+        ch.setFormatter(fmt)
+        logger.addHandler(ch)
+
+    logger.setLevel(logging.DEBUG)
+    return logger
+
 
 class HMM:
-    def __init__(self, sentences, entities, poses=None, chunks=None):
+    def __init__(self, sentences, entities, poses=None, chunks=None, logger=None):
         """
         Inıtializer of the HMM model. Takes 4 parameters, two of them is necessary which are sentences and entities.
         :param sentences: List of sentences which is list of words.
@@ -17,6 +43,7 @@ class HMM:
         :param chunks: List of chunk tags of each sentence.
         """
         super().__init__()
+        self.logger = logger
         self.sentences, self.poses, self.chunks, self.entities = sentences, poses, chunks, entities
 
         # trans from iob1 to bioul
@@ -45,10 +72,10 @@ class HMM:
         # 计算状态转移概率矩阵
         self.trans_prob, self.s_trans_prob = self.cal_trans_prob()
 
-        print("self.n_bi_en")
-        print(self.n_bi_en)
-        print("self.trans_prob, self.s_trans_prob ")
-        print(self.trans_prob, self.s_trans_prob )
+        #  logger.info("self.n_bi_en")
+        #  logger.info(self.n_bi_en)
+        #  logger.info("self.trans_prob, self.s_trans_prob ")
+        #  logger.info(self.trans_prob, self.s_trans_prob )
 
         self._true_positives = dict()  #: Dict[str, int]
         self._false_positives = dict()  #: Dict[str, int]
@@ -232,21 +259,18 @@ class HMM:
 
         for i in range(len(label)):
             i_lab = self.to_bioul(label[i], 'IOB1')
-            i_pre = predict[i]
+            try:
+                i_pre = predict[i]
+            except:
+                pdb.set_trace()
 
             for x, y in zip(i_lab, i_pre):
                 if x==y:
                     true_cnt+=1
                 all_cnt+=1
 
-            #  predicted_spans = self.tags_to_spans_function(i_pre)
-            #  gold_spans = self.tags_to_spans_function(i_lab)
-            #  print("label sequence:{}".format(i_lab))
-            #  print("predict sequence:{}".format(i_pre))
             predicted_spans = self.bioul_tags_to_spans(i_pre)
-            #  print("predicted_span:{}".format(predicted_spans))
             gold_spans = self.bioul_tags_to_spans(i_lab)
-            #  print("gold_spans:{}".format(gold_spans))
 
             for span in predicted_spans:
                 if span in gold_spans:
@@ -263,11 +287,14 @@ class HMM:
         all_tags.update(self._false_positives.keys())
         all_tags.update(self._false_negatives.keys())
         all_metrics = {}
-        print(all_tags)
+        self.logger.info(all_tags)
+        self.logger.info("self._true_positives: {}".format(self._true_positives))
+        self.logger.info("self._false_negatives: {}".format(self._false_negatives))
+        self.logger.info("self._false_negatives: {}".format(self._false_negatives))
         #  pdb.set_trace()
         for tag in all_tags:
-            precision, recall, f1_measure = self._compute_metrics(self._true_positives[tag], self._false_positives[tag],
-                                                                  self._false_negatives[tag])
+            precision, recall, f1_measure = self._compute_metrics(self._true_positives.get(tag, 0), self._false_positives.get(tag, 0),
+                                                                  self._false_negatives.get(tag, 0))
             precision_key = "precision" + "-" + tag
             recall_key = "recall" + "-" + tag
             f1_key = "f1-measure" + "-" + tag
@@ -410,7 +437,6 @@ class HMM:
         for idx, en in enumerate(self.entities):
             if len(en)>0:
                 self.entities[idx] = self.to_bioul(en, 'IOB1')
-        #  pdb.set_trace()
 
     def _iob1_start_of_chunk(
         self, 
@@ -455,13 +481,11 @@ class HMM:
         active_conll_tag = None
         prev_bio_tag = None
         prev_conll_tag = None
-        #  print(tag_sequence)
         for index, string_tag in enumerate(tag_sequence):
             curr_bio_tag = string_tag[0]
             curr_conll_tag = string_tag[2:]
 
             if curr_bio_tag not in ["B", "I", "O"]:
-                #  pdb.set_trace()
                 raise InvalidTagSequence(tag_sequence)
             if curr_bio_tag == "O" or curr_conll_tag in classes_to_ignore:
                 # The span has ended.
@@ -536,7 +560,7 @@ class HMM:
                     spans.append((label.partition("-")[2], (start, index)))
             #  else:
             #  if label != "O":
-            #  print(label)
+            #  logger.info(label)
             #  raise InvalidTagSequence(tag_sequence)
             #  continue
             index += 1
@@ -653,48 +677,54 @@ def dataset(conll_file):
     return sent, pos, chunk, entity
 
 
-def accuracy(org_ent, pred_ent):
-    """
-    Counts the true predicted entities and returns the calculated accuracy.
-    :param org_ent: Original entities of the test sentences as [["O","B-PER",...],["O","O"],...]
-    :param pred_ent: Predicted entities of the test sentences as [["O","B-PER",...],["O","O"],...]
-    :return: accuracy as float
-    """
-    true = 0
-
-    #  pdb.set_trace()
-    org_ent = [self.to_bioul(x, 'IOB1') for x in org_ent]
-    #  pdb.set_trace()
-    org = [item for sublist in org_ent for item in sublist]
-    pred = [item for sublist in pred_ent for item in sublist]
-
-    for t, r in zip(org, pred):
-        if t == r:
-            true += 1
-    print(true)
-    print(len(org))
-    return true / len(org)
-
-
+def save_result(output_path, result, logger=None):
+    with open(output_path, 'w') as fout:
+        fout.write("label\tpredict\n")
+        for i in range(len(result)):
+            for j in range(len(result[i])):
+                fout.write("{}\t{}\n".format(result[i][j], result[i][j]))
+            fout.write("\n")
+    logger.info("saved into {}".format(output_path))
 
 
 def main():
     """
     Main function of the program
     """
-    sentences, _, _, entities = dataset('./data/eng.train')
-    #  dev_sentences, _, _, dev_entities = dataset('./data/eng.testa')
-    test_sentences, _, _, test_entities = dataset('./data/eng.testb')
+    train_path = './data/eng.train'
+    val_path = './data/eng.testa'
+    test_path = './data/eng.testb'
+    base_path = './models/model_hmm'
+    val_out = os.path.join(base_path, 'val_output.txt')
+    test_out = os.path.join(base_path, 'test_output.txt')
 
-    hmm = HMM(sentences=sentences, entities=entities)
+    log_path = './models/model_hmm/hmm.log'
+    logger = get_logger(log_path=log_path, streamhandler=True, filehandler=True)
 
-    res = viterbi(hmm=hmm, t_sentences=test_sentences)
+    logger.info("Loading train, val and test dataset")
+    sentences, _, _, entities = dataset(train_path)
+    dev_sentences, _, _, dev_entities = dataset(val_path)
+    test_sentences, _, _, test_entities = dataset(test_path)
 
-    #  print(res)
-    print("test_entities  and result shape: {} {}".format(len(test_entities), len(res)))
-    metrics = hmm.get_metric(test_entities, res)
-    print(metrics)
-    #  print("Acc: {}".format(accuracy(org_ent=test_entities, pred_ent=res)))
+    logger.info("Training hmm model")
+    hmm = HMM(sentences=sentences, entities=entities, logger=logger)
+
+    logger.info("Validating")
+    val_res = viterbi(hmm=hmm, t_sentences=dev_sentences)
+    logger.info("Validation dataset shape: {}, result shape: {}".format(len(dev_entities), len(val_res)))
+    metrics = hmm.get_metric(dev_entities, val_res)
+    logger.info("Validation metrics: {}".format(metrics))
+    logger.info("Saving results")
+    save_result(val_out, val_res, logger)
+
+    logger.info("Testing")
+    test_res = viterbi(hmm=hmm, t_sentences=test_sentences)
+    logger.info("Test dataset shape: {}, result shape: {}".format(len(test_entities), len(test_res)))
+    metrics = hmm.get_metric(test_entities, test_res)
+    logger.info("Test metrics: {}".format(metrics))
+    logger.info("Saving results")
+    save_result(test_out, test_res, logger)
 
 
-main()
+if __name__ == '__main__':
+    main()
