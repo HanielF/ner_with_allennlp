@@ -56,8 +56,8 @@ local common = import 'common.libsonnet';
       type: 'sgd',
       lr: 0.015,
     },
-    num_epochs: 100,
-    cuda_device: 1
+    num_epochs: 30,
+    cuda_device: 0
   },
   /* "distributed": { */
       /* "cuda_devices": [0, 1], */

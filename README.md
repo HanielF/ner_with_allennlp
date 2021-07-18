@@ -30,16 +30,21 @@
     - pytorch== 1.8.1
     - allennlp== 2.4.0
     - allennlp-models==2.4.0
+    - `conda create -n allennlp python=3.7`
+    - `conda activate allennlp`
+    - `pip install allennlp==2.4.0`
+    - `pip install allennlp-models==2.4.0`
+    - ``
 3. 切换到项目路径
     - `cd ner_with_allennlp`
 4. HMM运行方式
     - `python ner_modules/hmm.py`
 5. CRF/CNN/BiLSTM/BERT/RoBERTa运行方式
-    - `python run.sh crf`
-    - `python run.sh cnn`
-    - `python run.sh bilstm_crf`
-    - `python run.sh bert`
-    - `python run.sh roberta_crf`
+    - `bash run.sh crf`
+    - `bash run.sh cnn`
+    - `bash run.sh bilstm_crf`
+    - `bash run.sh bert`
+    - `bash run.sh roberta_crf`
 
 ## 项目报告节选
 
