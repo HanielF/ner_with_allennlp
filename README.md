@@ -33,7 +33,7 @@
 3. 切换到项目路径
     - `cd ner_with_allennlp`
 4. HMM运行方式
-    - `python ner_modules/hmm2.py`
+    - `python ner_modules/hmm.py`
 5. CRF/CNN/BiLSTM/BERT/RoBERTa运行方式
     - `python run.sh crf`
     - `python run.sh cnn`
