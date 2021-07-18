@@ -1,0 +1,77 @@
+{
+    "dataset_reader": {
+        "type": "conll2003",
+        "coding_scheme": "BIOUL",
+        "tag_label": "ner",
+        "token_indexers": {
+            "tokens": {
+                "type": "pretrained_transformer_mismatched",
+                "max_length": 512,
+                "model_name": "roberta-large"
+            }
+        }
+    },
+    "model": {
+        "type": "crf_tagger_facol_loss",
+        "calculate_span_f1": true,
+        "constrain_crf_decoding": true,
+        "dropout": 0.5,
+        "encoder": {
+            "type": "lstm",
+            "bidirectional": true,
+            "dropout": 0.5,
+            "hidden_size": 512,
+            "input_size": 1024,
+            "num_layers": 1
+        },
+        "feedforward": {
+            "activations": "relu",
+            "dropout": 0.5,
+            "hidden_dims": [
+                1024,
+                128
+            ],
+            "input_dim": 1024,
+            "num_layers": 2
+        },
+        "include_start_end_transitions": false,
+        "label_encoding": "BIOUL",
+        "regularizer": {
+            "regexes": [
+                [
+                    "weight",
+                    "l2"
+                ]
+            ]
+        },
+        "text_field_embedder": {
+            "token_embedders": {
+                "tokens": {
+                    "type": "pretrained_transformer_mismatched",
+                    "max_length": 512,
+                    "model_name": "roberta-large",
+                    "train_parameters": true
+                }
+            }
+        }
+    },
+    "train_data_path": "./data/eng.train",
+    "validation_data_path": "./data/eng.testa",
+    "test_data_path": "./data/eng.testb",
+    "trainer": {
+        "cuda_device": 0,
+        "num_epochs": 10,
+        "optimizer": {
+            "type": "adam",
+            "lr": 1e-05
+        }
+    },
+    "data_loader": {
+        "batch_size": 8,
+        "shuffle": true
+    },
+    "datasets_for_vocab_creation": [
+        "train"
+    ],
+    "evaluate_on_test": true
+}

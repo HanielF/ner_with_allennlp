@@ -39,4 +39,4 @@ if [ ! -f $config ];then
   exit
 fi
 
-allennlp train $config --serialization-dir $serial_dir
+allennlp train $config --serialization-dir $serial_dir --include-package ner_modules

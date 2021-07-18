@@ -7,7 +7,7 @@ from torch.nn.modules.linear import Linear
 from allennlp.common.checks import check_dimensions_match, ConfigurationError
 from allennlp.data import TextFieldTensors, Vocabulary
 from allennlp.modules import Seq2SeqEncoder, TimeDistributed, TextFieldEmbedder
-from allennlp.modules import ConditionalRandomField, FeedForward
+from . import ConditionalRandomField_2, FeedForward
 from allennlp.modules.conditional_random_field import allowed_transitions
 from allennlp.models.model import Model
 from allennlp.nn import InitializerApplicator
@@ -15,7 +15,7 @@ import allennlp.nn.util as util
 from allennlp.training.metrics import CategoricalAccuracy, SpanBasedF1Measure
 
 
-@Model.register("crf_tagger2")
+@Model.register("crf_tagger_facol_loss")
 class CrfTagger(Model):
     """
     The `CrfTagger` encodes a sequence of text with a `Seq2SeqEncoder`,
@@ -130,7 +130,7 @@ class CrfTagger(Model):
             constraints = None
 
         self.include_start_end_transitions = include_start_end_transitions
-        self.crf = ConditionalRandomField(
+        self.crf = ConditionalRandomField_2(
             self.num_tags, constraints, include_start_end_transitions=include_start_end_transitions
         )
 
