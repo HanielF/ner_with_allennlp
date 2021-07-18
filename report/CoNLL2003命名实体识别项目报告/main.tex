@@ -38,7 +38,7 @@
 \fancypagestyle{plain}
 \fancyhf{} % 清空当前设置
 \fancyhead[L]{CoNLL2003命名实体识别项目报告}
-\fancyhead[R]{徐迪}
+\fancyhead[R]{徐迪\ 杨明煊}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0.5pt}
@@ -74,7 +74,7 @@
 
 
 % author information
-\author{徐迪 202028013229112}
+\author{徐迪 202028013229112 杨明煊 202028013229115}
 % \affiliation{\institution{202028013229112}}
 % \email{xudi20@mails.ucas.ac.cn}
 
@@ -94,22 +94,24 @@ NER全称是命名实体识别（Named Entity Recognition, NER），目标是识
 
 项目的模型任务便是准确地识别出每一个实体以及它的类型，训练任务会在训练集和验证集上进行，通过验证集来优化模型参数，最后会在测试集上进行测试，计算Accuracy、Precision、Recall和F1等指标来评估模型。
 
-通过调研NER的发展历程，我了解到NER的发展经历了从基于规则的线性模型，到后来的监督学习方法（HMM，DT，CRF等），再到近年来的深度学习方法的大流行。为了对比研究各类NER方法在CoNLL2003数据集上的效果，以及研究不同模型之间的异同和优劣，这里分别实现了传统的监督学习方法HMM和CRF来进行命名实体的识别，同时使用卷积神经网络、循环神经网络，以及预训练模型RoBERTa方法分别进行实体的识别。
+通过调研NER的发展历程，我们了解到NER的发展经历了从基于规则的线性模型，到后来的监督学习方法（HMM，DT，CRF等），再到近年来的深度学习方法的大流行。为了对比研究各类NER方法在CoNLL2003数据集上的效果，以及研究不同模型之间的异同和优劣，这里分别实现了传统的监督学习方法HMM和CRF来进行命名实体的识别，同时使用卷积神经网络、循环神经网络，以及预训练模型RoBERTa方法分别进行实体的识别。
 
+在对实验数据的统计，以及实验结果的分析基础上，我们对实验的模型loss进行了一定的修改，引入了针对不平衡类别的focal loss，在f1分数和准确率上有了一定的提升。
+git
 在下一个部分的研究进展中，本文对NER方面的研究发展过程进行了简单的综述，方便理解命名实体识别领域的研究趋势；在实验模型介绍部分，本文针对各个模型的原理进行了简要的介绍和总结对比，希望能从模型原理上解释实验的结果差异；在实验结果部分，对各个模型的结果进行了总结和分析；最后，本文对命名实体识别项目做了一个简要的总结。
 % section project (end)
 
 \section{研究进展} % (fold)
 \label{sec:progress}
-命名实体识别NER的任务目标是给出一个命名实体的起始和终止边界，并给出命名实体的类别。一般而言完成NER任务的方法分为基于规则、基于无监督方法、基于特征的机器学习方法和基于深度学习的方法四种。其中一般领域性比较强，数据量很少的NER任务会用规则，其余基本上都是机器学习或者深度学习。尤其是在数据量比较充足的时候，深度学习一般都可以获得比较不错的效果。
+命名实体识别NER的任务目标是给出一个命名实体的起始和终止边界，并给出命名实体的类别。一般而言完成NER任务的方法分为基于规则、基于无监督方法、基于特征的机器学习方法和基于深度学习的方法四种。其中一般领域性比较强，数据量很少的NER任务会用规则，其余基本上都是机器学习或者深度学习。尤其是在数据量比较充足的时候，深度学习一般都可以获得比较不错的效果\cite{lample-etal-2016-neural}。
 
-在基于规则的NER任务中，需要手工指定符合条件的词及其对应的类别。具体使用的规则包括特定领域词典、同义词典、句法词汇模板和正则表达式等等。其优点在于不需要进行数据标注，但是指定规则工作量大，需要不断维护，同时迁移成本较高，常用的NER系统包括LaSIE-II, NetOwl等。当词汇表足够大时，基于规则的方法能够取得不错效果。但总结规则模板花费大量时间，且词汇表规模小，且实体识别结果普遍高精度、低召回。基于无监督的NER学习方法中使用聚类的方法，根据文本相似度进行不同实体类别组的聚类，同样不需要标注数据，但得到的结果准确度有限。常用到的特征或者辅助信息有词汇资源、语料统计信息（TF-IDF）、浅层语义信息（分块NP-chunking）等。基于特征的有监督学习方法中，NER任务可以视为机器学习token 级别的多分类任务或序列标注任务， 需要标注数据，同时一般结合精心设计的特征，包括词级别特征、文档特征和语料特征等等。常用的NER机器学习模型包括隐马尔可夫模型 HMM、决策树 DT、最大熵模型 MEM、最大熵马尔科夫模型 HEMM、支持向量机 SVM、条件随机场 CRF等。
+在基于规则的NER任务中，需要手工指定符合条件的词及其对应的类别。具体使用的规则包括特定领域词典、同义词典、句法词汇模板和正则表达式等等。其优点在于不需要进行数据标注，但是指定规则工作量大，需要不断维护，同时迁移成本较高，常用的NER系统包括LaSIE-II, NetOwl等\cite{nadeau2007survey}。当词汇表足够大时，基于规则的方法能够取得不错效果。但总结规则模板花费大量时间，且词汇表规模小，且实体识别结果普遍高精度、低召回。基于无监督的NER学习方法中使用聚类的方法，根据文本相似度进行不同实体类别组的聚类，同样不需要标注数据，但得到的结果准确度有限。常用到的特征或者辅助信息有词汇资源、语料统计信息（TF-IDF）、浅层语义信息（分块NP-chunking）等\cite{rei-2017-semi}。基于特征的有监督学习方法中，NER任务可以视为机器学习token 级别的多分类任务或序列标注任务， 需要标注数据，同时一般结合精心设计的特征，包括词级别特征、文档特征和语料特征等等。常用的NER机器学习模型包括隐马尔可夫模型 HMM、决策树 DT、最大熵模型 MEM、最大熵马尔科夫模型 HEMM、支持向量机 SVM、条件随机场 CRF等。
 
-深度学习NER受益于DL非线性，相比于传统线性模型可以学到更为复杂并对模型有益的特征，端到端过程得以实现，近年来成为主流研究方向。近年来，使用大规模的语料数据进行模型的预训练，然后在下游任务进行任务和数据导向的微调，成为了自然语言处理领域各个任务的主流方法。得益于大规模的语料，以及自注意力机制的存在，预训练模型能够很好地学习语言本身具有的含义，并且通过无监督的训练方式得到一个具备潜在语义信息的编码，这种通用的包含语义的编码能够适应大部分下游任务，也具有更强的表示能力。最具代表性的是BERT，它的提出是从监督学习方法到无监督预训练模型的转折。随后各类方法大多都是在Transformer基础上，调整预训练任务和策略等。比较有名的有GPT系列，XLNET，ALBERT，RoBERTa等，它们的核心模块都是自注意力机制，通用特点是使用大规模语料训练大规模的语言模型，提取通用的语言特征。目前大多数方法都是基于深度学习模型训练得到文本的隐语义编码，然后通过结合CRF模型得到预测结果。这样充分结合了深度学习强大的编码能力和传统机器学习的分类能力，也避免了深度学习模型在预测命名实体类别时，出现不可控的情况，例如B-PER后面不可能出现B-PER，这是一种规则约束，而单纯的深度学习模型是有可能出现这种情况的，结合CRF，通过学习得到一系列规则约束，避免了这些问题。
+深度学习NER受益于DL非线性，相比于传统线性模型可以学到更为复杂并对模型有益的特征，端到端过程得以实现，近年来成为主流研究方向。近年来，使用大规模的语料数据进行模型的预训练，然后在下游任务进行任务和数据导向的微调，成为了自然语言处理领域各个任务的主流方法。得益于大规模的语料，以及自注意力机制的存在，预训练模型能够很好地学习语言本身具有的含义，并且通过无监督的训练方式得到一个具备潜在语义信息的编码，这种通用的包含语义的编码能够适应大部分下游任务，也具有更强的表示能力\cite{9039685}。最具代表性的是BERT，它的提出是从监督学习方法到无监督预训练模型的转折。随后各类方法大多都是在Transformer基础上，调整预训练任务和策略等。比较有名的有GPT系列，XLNET，ALBERT，RoBERTa等，它们的核心模块都是自注意力机制，通用特点是使用大规模语料训练大规模的语言模型，提取通用的语言特征。目前大多数方法都是基于深度学习模型训练得到文本的隐语义编码，然后通过结合CRF模型得到预测结果。这样充分结合了深度学习强大的编码能力和传统机器学习的分类能力，也避免了深度学习模型在预测命名实体类别时，出现不可控的情况，例如B-PER后面不可能出现B-PER，这是一种规则约束，而单纯的深度学习模型是有可能出现这种情况的，结合CRF，通过学习得到一系列规则约束，避免了这些问题。
 
 除了模型方面，近年来的研究偏向于结合不同级别的语义编码，从字符级别，到词级别，到实体级别的编码，不同模型之间的区别可能就在于如何提取这些编码，以及如何后处理这些编码。LUKE模型便是在其基础上对实体级别的编码进行预训练，并且使用BERT语言模型的掩码机制和新的训练任务，结合实体级别的自注意力机制，最终在多个实体相关的任务上获得了SOTA效果。
 
-目前在命名实体识别领域，实体识别效果最好的是使用ACE模型(Automated Concatenation of Embeddings)结合文档级上下文语义，模型的目标是找到更好的embedding拼接方式，并且使用神经网络结构搜索的方式来自动化寻找拼接方式这一过程，而不是人为定义好拼接哪些embeddding。同时论文中使用了强化学习方法对模型进行训练，对于好的拼接方式，模型将会得到一个奖励，反之会得到一个惩罚，这样一个强化学习的奖励机制能够让模型学习到具体应该拼接哪些embedding。
+目前在命名实体识别领域，实体识别效果最好的是使用ACE模型(Automated Concatenation of Embeddings)结合文档级上下文语义，模型的目标是找到更好的embedding拼接方式，并且使用神经网络结构搜索的方式来自动化寻找拼接方式这一过程，而不是人为定义好拼接哪些embeddding\cite{wang2021automated}。同时论文中使用了强化学习方法对模型进行训练，对于好的拼接方式，模型将会得到一个奖励，反之会得到一个惩罚，这样一个强化学习的奖励机制能够让模型学习到具体应该拼接哪些embedding。
 % section progress (end)
 
 \section{整体框架介绍} % (fold)
@@ -159,6 +161,8 @@ HMM模型主要能够用于两个场景：
 
 因此，对于一个HMM模型，只需要先统计得到初始化矩阵$\Pi$，状态转移矩阵$A$，观测矩阵，也叫发射矩阵$B$，就可以通过初始化第一个时间步，然后使用维特比算法，不断转移到一个概率最大的隐状态对应当前的观测值，然后便可以通过观测状态序列得到隐状态序列。
 
+在本项目中，我们使用了bio和bioul两种方式对实体进行标记，并对比分析了它们的结果，同时还对状态转移矩阵和观测矩阵、发射矩阵等都进行了平滑处理，最终的HMM模型在CoNLL2003数据集上得到了F1-score=0.64的结果。
+
 % subsection hmm (end)
 
 \subsection{CRF} % (fold)
@@ -182,13 +186,13 @@ RNN对处理序列问题有天然的优势存在，传统的RNN由于存在梯�
     \label{fig:bilstm}
 \end{figure}
 
-这里主要是用BiLSTM来提取字符级别的特征编码，以及对编码进行序列级别特征提取，得到一个特征融合后的结果，再通过全连接层得到对所有tag的logit，最后使用CRF进行实体的识别预测。
+这里主要是用BiLSTM来提取字符级别的特征编码，以及对编码进行序列级别特征提取，得到一个特征融合后的结果，再通过全连接层得到对所有tag的logit，最后使用CRF进行实体的识别预测\cite{huang2015bidirectional}。
 
 % subsection bilstm (end)
 
 \subsection{CNN+BiLSTM+CRF} % (fold)
 \label{sub:cnn}
-对于分词任务，当前词的标签基本上只与前几个词有关联。BiLSTM在学习较长句子时，可能因为模型容量问题丢弃一些重要信息，因此在模型中加了一个CNN层，用于提取当前词的局部特征，加入了CNN的模型如下。
+对于分词任务，当前词的标签基本上只与前几个词有关联。BiLSTM在学习较长句子时，可能因为模型容量问题丢弃一些重要信息，因此在模型中加了一个CNN层，用于提取当前词的局部特征\cite{ma2016endtoend}。CNN是一个从词的字符中提取词形信息（前缀、后缀等）并编码为神经元表示的有效方法。加入了CNN的模型如下\cite{chiu-nichols-2016-named}。
 
 \begin{figure}[htbp]
     \centering
@@ -197,7 +201,7 @@ RNN对处理序列问题有天然的优势存在，传统的RNN由于存在梯�
     \label{fig:encoder}
 \end{figure}
 
-句子经过 embedding 层，一个 word 被表示为 N 维度的向量，随后整个句子表示使用卷积编码，进而得到每个 word 的局部特征，卷积层的输出大小与输入的句子长度有关，为了获取固定维度的句子表示，常常使用最大池化操作得到整个句子的全局特征。
+句子经过 embedding 层，一个 word 被表示为 N 维度的向量，随后整个句子表示使用卷积编码，进而得到每个 word 的局部特征，卷积层的输出大小与输入的句子长度有关，为了获取固定维度的句子表示，常常使用最大池化操作得到整个句子的全局特征。最后输入到全连接层中，加入dropout。
 
 % subsection cnn (end)
 
@@ -206,7 +210,7 @@ RNN对处理序列问题有天然的优势存在，传统的RNN由于存在梯�
 项目中使用的BERT和RoBERTa都是基于Transformer的encoder，并且在Transformer的基础上提出了特定的预训练任务，因此在这里对Transformer进行一个系统的介绍，后续的BERT模型和RoBERTa模型则会相对较少的描述，而是更偏重在项目本身的模型结构上。
 
 
-Transformer是Vaswani等人在《Attention Is All You Need》中提出的，目标是为了提高机器翻译的效率，他们使用了创新的self-attention机制，用于替代RNN循环神经网络，能够高效的并行计算所有位置上的隐藏状态，同时克服了RNN中一直存在的梯度消失问题。Transformer主体分为encoder和decoder，是比较经典的seq2seq模型结构，如图3.3所示，后续的BERT和GPT系列都是只采用了编码器和解码器中的一种，并且都在各类自然语言处理任务中刷新了SOTA。Transformer是实验中的模型BERT和RoBERTa的基础，下面主要对Transformer中的多头自注意力机制、带有位置编码的输入、Layer Normalization、残差连接这几个部分进行简要的介绍。
+Transformer是Vaswani等人在《Attention Is All You Need》中提出的，目标是为了提高机器翻译的效率，他们使用了创新的self-attention机制，用于替代RNN循环神经网络，能够高效的并行计算所有位置上的隐藏状态，同时克服了RNN中一直存在的梯度消失问题\cite{NIPS2017_3f5ee243}。Transformer主体分为encoder和decoder，是比较经典的seq2seq模型结构，如图3.3所示，后续的BERT和GPT系列都是只采用了编码器和解码器中的一种，并且都在各类自然语言处理任务中刷新了SOTA。Transformer是实验中的模型BERT和RoBERTa的基础，下面主要对Transformer中的多头自注意力机制、带有位置编码的输入、Layer Normalization、残差连接这几个部分进行简要的介绍。
 
 \begin{figure}[htbp]
     \centering
@@ -244,7 +248,9 @@ Transformer的残差连接其实是将输入通过self-attention之后，得到�
 \subsection{BERT+BiLSTM+CRF} % (fold)
 \label{sub:bert}
 
-BERT+BiLSTM+CRF模型中，BERT负责学习输入句子中每个字和符号到对应的实体标签的规律，学得句子中每个字符最大概率的实体标注，过程中考虑每个字符的上下文信息，而CRF负责学习相邻实体标签之间的转移规则，通过引入CRF解决输出的最大分数对应的实体标注依然可能有误的问题。
+BERT\cite{devlin2018pretraining}模型是一种预训练模型，使用堆叠的双向Transformer Encoder，在所有层中共同依赖于左右上下文，不用Decoder。Pre-training和Fine-Tuning阶段使用相同的模型结构，所以同样的Pre-trainng模型参数可用于初始化不同下游任务模型。Pre-training策略采用以下两方面，第一，随机mask部分输入token，只预测被屏蔽的token；第二，使用二分类任务预训练句间关系模型，从而建模句间关系。
+
+BERT+BiLSTM+CRF模型中，我们使用基础版BERT，包含12个Encoder， 768隐藏单元， 12个head，总参数量110M。BERT负责学习输入句子中每个字和符号到对应的实体标签的规律，学得句子中每个字符最大概率的实体标注，过程中考虑每个字符的上下文信息，而CRF负责学习相邻实体标签之间的转移规则，通过引入CRF解决输出的最大分数对应的实体标注依然可能有误的问题。
 
 \begin{figure}[htbp]
     \centering
@@ -260,7 +266,7 @@ BERT+BiLSTM+CRF模型中，BERT负责学习输入句子中每个字和符号到�
 
 \subsection{RoBERTA+BiLSTM+CRF} % (fold)
 \label{sub:roberta}
-RoBERTa是在BERT的一个继承和优化，从模型上来说，RoBERTa基本没有什么太大创新，主要是在BERT基础上做了几点调整：
+RoBERTa\cite{liu2019roberta}是在BERT的一个继承和优化，从模型上来说，RoBERTa基本没有什么太大创新，主要是在BERT基础上做了几点调整：
 
 \begin{enumerate}
     \item 预训练的时间更长，batch size更大，training step减少，实验效果相当或者更好些；
@@ -301,10 +307,11 @@ RoBERTa是在BERT的一个继承和优化，从模型上来说，RoBERTa基本�
          System & tagging accuracy & F1 scores \\   
         \hline
         
-         HMM                &       90.18 & 59.32          \\
+         HMM(BIO)           &       90.18 & 59.32          \\
+         HMM(BIOUL)         &       90.47 & 68.15          \\
          CRF                &       92.00 & 69.36          \\
          BiLSTM+CRF         &       96.89 & 85.15        \\
-         CNN+BiLSTM+CRF     &       96.65 & 84.69          \\
+         CNN+BiLSTM+CRF     &       97.11 & 86.94          \\
          BERT+BiLSTM+CRF    &       97.95 & 90.44         \\
          RoBERTa+BiLSTM+CRF &       98.02 & 91.22      \\
         \hline
@@ -313,8 +320,40 @@ RoBERTa是在BERT的一个继承和优化，从模型上来说，RoBERTa基本�
     \caption {对比不同NER模型下的标注准确率和F1得分} 
 \end{table}
 
-本文中的模型可以通过 GloVe 嵌入获得 91.22 的最佳 F1 分数。使用了各种机器学习分类器的组合，根据表1结果，BLSTM-CRF模型明显优于 CRF 模型，表明句子特征提取对于命名实体识别任务很重要。BiLSTM+CRF 略微优于 CNN+BiLSTM+CRF，可能是使用了GloVe 不同的词嵌入。然而，BERT+BiLSTM+CRF 明显优于 BiLSTM+CRF，预训练模型BERT的引入大大提高了准确度，而针对BERT模型的改进模型RoBERTa性能也有所提升。
+本文中的模型可以通过 GloVe 嵌入获得 91.22 的最佳 F1 分数。使用了各种机器学习分类器的组合，根据表1结果，BLSTM-CRF模型明显优于 CRF 模型，表明句子特征提取对于命名实体识别任务很重要。CNN+BiLSTM+CR模型提升了BiLSTM+CRF模型结果，表明字符级别的表示对于语言学中序列标注任务十分重要，和先前研究得到的结果相同。然而，BERT+BiLSTM+CRF 明显优于 BiLSTM+CRF，预训练模型BERT的引入大大提高了准确度，而针对BERT模型的改进模型RoBERTa性能也有所提升。
+
 % subsection res (end)
+\subsection{其他对比实验} % (fold)
+\label{sub:loss}
+
+我们发现训练集中，人名、地名、机构名和其他这四个类别的实体数量分别为1842，1837，1341，922，在数量上存在不平衡的现象，因此我们考虑引入focal loss，尝试尝试通过解决不平衡的问题来提高F1指数。原模型使用的损失是普通交叉熵损失Log Loss。Log Loss和Focal Loss 的具体形式如下，
+$$Log Loss = -\log y$$
+$$Focal Loss = -\alpha (1-y)^\gamma \log y$$
+
+Log Loss中存在样本不平衡下模型偏向背景的问题。当正样本数量远远小于负样本的数量时，即y=0的数量远大于y=1的数量，loss函数中y=0的成分就会占据主导，使得模型严重偏向背景。所以对于背景大于目标的分割任务，Log loss效果非常不好。
+
+可以看到，Focal Loss相比于Log Loss引入参数alpha和gamma。平衡因子alpha取值范围为0~1，用来平衡正负样本的比例，当alpha>0.5时，可以相对增加y=1所占的比例。实现正负样本的平衡。参数gamma>0，可以做到关心难样本的比例，不关心易于分类的样本情况。比如，gamma=2时，如果正类样本预测大与0.5时，gamma的引入使得其占比减小；相对应而言，负类样本大与小于0.5时，gamma的引入使其占比增加。通过gamma参数使得对难分类样本的权重占比增加。通过对crf优化Loss为Focal Loss，其中选取参数alpha=1，gamma=2时结果如表2所示，可以看到通过Facol Loss的引入，任务的准确率和F1 score均有所上升。
+
+\begin{table}[htbp]
+    \begin{center}
+    \large 
+    \begin{tabular}{lcc}
+        \hline
+         Loss & tagging accuracy & F1 scores \\   
+        \hline
+        
+         $CRF_{LogLoss}$       &       96.78 & 84.24      \\
+         $CRF_{FocalLoss}$     &       96.90 & 84.84      \\
+         $RoBERTa_{LogLoss}$   &       98.02 & 91.21      \\
+         $RoBERTa_{FocalLoss}$ &       97.94 & 90.93\\
+        \hline
+    \end{tabular}
+    \end{center}
+    \caption {对比不同Loss下的标注准确率和F1得分} 
+\end{table}
+
+
+% subsection loss (end)
 
 % section analysis (end)
 
@@ -324,7 +363,7 @@ RoBERTa是在BERT的一个继承和优化，从模型上来说，RoBERTa基本�
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.8\textwidth]{folder.png}
+    \includegraphics[width=0.9\textwidth]{tree.png}
     \caption{源码目录结构和介绍}
     \label{fig:}
 \end{figure}
@@ -344,25 +383,47 @@ RoBERTa是在BERT的一个继承和优化，从模型上来说，RoBERTa基本�
             \item $allennlp-models==2.4.0$
         \end{itemize}
     \item 切换到项目路径： cd ner\_with\_allennlp
-    \item HMM运行方式：python ner\_modules/hmm2.py
+    \item HMM运行方式：python ner\_modules/hmm.py
     \item CRF/CNN/BiLSTM/BERT/RoBERTa运行方式
         \begin{itemize}
-            \item python run.sh crf
-            \item python run.sh cnn
-            \item python run.sh bilstm\_crf
-            \item python run.sh bert
-            \item python run.sh roberta\_crf
+            \item bash run.sh crf
+            \item bash run.sh cnn
+            \item bash run.sh bilstm\_crf
+            \item bash run.sh bilstm\_crf\_focalloss
+            \item bash run.sh bert
+            \item bash run.sh roberta\_crf
+            \item bash run.sh roberta\_crf\_focalloss
         \end{itemize}
+\end{enumerate}
+
+\section{成员分工}
+
+在项目分工上，我们尽可能做到让队友都真正地参与到项目中，并以此有所收获。从最初的调研，到后面的框架学习运用，以及最后的模型学习和实验总结，我们做到的不仅仅是下列的分工安排，更是两个人之间的项目交流与配合。
+
+项目具体的分工如下：
+\textbf{徐迪：}
+\begin{enumerate}
+    \item 主持项目，确定方向和实验，进度安排，进行仓库管理和版本控制
+    \item 阅读相关论文，研究背景和进展调研
+    \item HMM模型、BiLSTM模型、RoBERTa模型的实现和相关实验
+    \item 实验报告中的前言、项目介绍、研究进展、实验模型介绍（HMM、BiLSTM、RoBERTa）、实验源码和运行说明，以及总结的撰写
+\end{enumerate}
+
+\textbf{杨明烜：}
+\begin{enumerate}
+    \item 阅读相关论文，进行相关进展和SOTA调研
+    \item CRF模型、CNN模型、BERT模型的实现和相关实验
+    \item 实验报告中的研究进展、整体框架介绍、实验模型介绍（CRF、CNN、BERT）、实验结果分析和参考文献的撰写
 \end{enumerate}
 
 \section{总结}
 
-在对CoNLL2003数据集进行命名实体识别的过程中，我通过阅读相关论文，对命名实体识别的方法有了全局上的了解，并且了解了整个时间线上SOTA的发展变化过程，这让我对命名实体识别这一任务的背景和目标都有了充分的认识。
+在对CoNLL2003数据集进行命名实体识别的过程中，我们通过阅读相关论文，对命名实体识别的方法有了全局上的了解，并且了解了整个时间线上SOTA的发展变化过程，这让我们对命名实体识别这一任务的背景和目标都有了充分的认识。
 
 在传统的实体识别方法上，这里选用了经典的隐马尔科夫模型和条件随机场，它们基于对训练集数据的统计分析完成测试集上面的实体预测。而在深度学习的模型选择上，这里侧重使用基于Transformer的两个预训练模型，分别是BERT和RoBERTa，它们都是通过对大规模语料的预训练，提取出语言本身具有的潜在含义，然后再迁移到命名实体识别这一下游任务中。对比基于CNN和BiLSTM的模型，从准确率和F1分数上也可以看到有很大的提升，这也充分证明了预训练模型的有效性，以及模型的初始化编码对模型能力上的提升作用。
 
 
-% \bibliographystyle{ACM-Reference-Format}
-% \bibliography{ref}
+\bibliographystyle{plain}
+\bibliography{ref}
 
 \end{document}
