@@ -4,6 +4,7 @@ import math
 
 from collections import Counter
 from collections import defaultdict
+import pdb
 #  from allennlp.data.dataset_readers.dataset_utils.span_utils import bioul_tags_to_spans
 
 class HMM:
@@ -17,18 +18,33 @@ class HMM:
         """
         super().__init__()
         self.sentences, self.poses, self.chunks, self.entities = sentences, poses, chunks, entities
+
+        # trans from iob1 to bioul
+        self.trans_to_bioul()
+
+        # flatten
         self.all_words, self.all_poses, self.all_chunks, self.all_entities = self.merge_lists()
+
+        # set
         self.unique_entity_count = len(set(self.all_entities))
         self.unique_word_count = len(set(self.all_words))
 
+        # entity count, {"B-PER":3,"O":8,...}
         self.n_init_entity = self.init_entity_count()
+
+        # \pi 隐状态初始化概率 normal prob and smoothed prob 分子+1 分母+类别数
         self.init_prob, self.s_init_prob = self.cal_init_prob()
 
+        # 对每个entity的words计数，n_entity_word: {"O":{"car":2,"fire":3,...},...}
         self.n_entity_word = self.entity_word_count()
+        # 计算发射矩阵，未平滑处理的和平滑处理后的
         self.emis_prob, self.s_emis_prob = self.cal_emission_prob()
 
+        # 状态转移计数 bi-gram entities
         self.n_bi_en = self.bi_en_count()
+        # 计算状态转移概率矩阵
         self.trans_prob, self.s_trans_prob = self.cal_trans_prob()
+
         print("self.n_bi_en")
         print(self.n_bi_en)
         print("self.trans_prob, self.s_trans_prob ")
@@ -115,6 +131,7 @@ class HMM:
             for ent2 in unique_ent:
                 bi_entity[ent][ent2] = 0
 
+        # 遍历entities得到状态转移计数
         for entity_list in self.entities:
             bi_list = zip(*[entity_list[i:] for i in range(2)])     # Creates list of biagrams
             for bi in bi_list:
@@ -210,18 +227,25 @@ class HMM:
             Additionally, an `overall` key is included, which provides the precision,
             recall and f1-measure for all spans.
         """
+        true_cnt = 0
+        all_cnt = 0
 
         for i in range(len(label)):
-            i_lab = label[i]
+            i_lab = self.to_bioul(label[i], 'IOB1')
             i_pre = predict[i]
+
+            for x, y in zip(i_lab, i_pre):
+                if x==y:
+                    true_cnt+=1
+                all_cnt+=1
 
             #  predicted_spans = self.tags_to_spans_function(i_pre)
             #  gold_spans = self.tags_to_spans_function(i_lab)
             #  print("label sequence:{}".format(i_lab))
             #  print("predict sequence:{}".format(i_pre))
-            predicted_spans = self.iob1_tags_to_spans(i_pre)
+            predicted_spans = self.bioul_tags_to_spans(i_pre)
             #  print("predicted_span:{}".format(predicted_spans))
-            gold_spans = self.iob1_tags_to_spans(i_lab)
+            gold_spans = self.bioul_tags_to_spans(i_lab)
             #  print("gold_spans:{}".format(gold_spans))
 
             for span in predicted_spans:
@@ -240,6 +264,7 @@ class HMM:
         all_tags.update(self._false_negatives.keys())
         all_metrics = {}
         print(all_tags)
+        #  pdb.set_trace()
         for tag in all_tags:
             precision, recall, f1_measure = self._compute_metrics(self._true_positives[tag], self._false_positives[tag],
                                                                   self._false_negatives[tag])
@@ -259,6 +284,7 @@ class HMM:
         all_metrics["precision-overall"] = precision
         all_metrics["recall-overall"] = recall
         all_metrics["f1-measure-overall"] = f1_measure
+        all_metrics['accuracy-overall']=true_cnt/all_cnt
         if reset:
             self.reset_metrics()
         return all_metrics
@@ -274,6 +300,117 @@ class HMM:
         self._true_positives = defaultdict(int)
         self._false_positives = defaultdict(int)
         self._false_negatives = defaultdict(int)
+
+    def to_bioul(self, tag_sequence, encoding = "IOB1"):
+        """
+        Given a tag sequence encoded with IOB1 labels, recode to BIOUL.
+
+        In the IOB1 scheme, I is a token inside a span, O is a token outside
+        a span and B is the beginning of span immediately following another
+        span of the same type.
+
+        In the BIO scheme, I is a token inside a span, O is a token outside
+        a span and B is the beginning of a span.
+
+        # Parameters
+
+        tag_sequence : `List[str]`, required.
+            The tag sequence encoded in IOB1, e.g. ["I-PER", "I-PER", "O"].
+        encoding : `str`, optional, (default = `"IOB1"`).
+            The encoding type to convert from. Must be either "IOB1" or "BIO".
+
+        # Returns
+
+        bioul_sequence : `List[str]`
+            The tag sequence encoded in IOB1, e.g. ["B-PER", "L-PER", "O"].
+        """
+        if encoding not in {"IOB1", "BIO"}:
+            raise ConfigurationError(f"Invalid encoding {encoding} passed to 'to_bioul'.")
+
+        def replace_label(full_label, new_label):
+            # example: full_label = 'I-PER', new_label = 'U', returns 'U-PER'
+            parts = list(full_label.partition("-"))
+            parts[0] = new_label
+            return "".join(parts)
+
+        def pop_replace_append(in_stack, out_stack, new_label):
+            # pop the last element from in_stack, replace the label, append
+            # to out_stack
+            tag = in_stack.pop()
+            new_tag = replace_label(tag, new_label)
+            out_stack.append(new_tag)
+
+        def process_stack(stack, out_stack):
+            # process a stack of labels, add them to out_stack
+            if len(stack) == 1:
+                # just a U token
+                pop_replace_append(stack, out_stack, "U")
+            else:
+                # need to code as BIL
+                recoded_stack = []
+                pop_replace_append(stack, recoded_stack, "L")
+                while len(stack) >= 2:
+                    pop_replace_append(stack, recoded_stack, "I")
+                pop_replace_append(stack, recoded_stack, "B")
+                recoded_stack.reverse()
+                out_stack.extend(recoded_stack)
+
+        # Process the tag_sequence one tag at a time, adding spans to a stack,
+        # then recode them.
+        bioul_sequence = []
+        stack: List[str] = []
+
+        for label in tag_sequence:
+            # need to make a dict like
+            # token = {'token': 'Matt', "labels": {'conll2003': "B-PER"}
+            #                   'gold': 'I-PER'}
+            # where 'gold' is the raw value from the CoNLL data set
+
+            if label == "O" and len(stack) == 0:
+                bioul_sequence.append(label)
+            elif label == "O" and len(stack) > 0:
+                # need to process the entries on the stack plus this one
+                process_stack(stack, bioul_sequence)
+                bioul_sequence.append(label)
+            elif label[0] == "I":
+                # check if the previous type is the same as this one
+                # if it is then append to stack
+                # otherwise this start a new entity if the type
+                # is different
+                if len(stack) == 0:
+                    if encoding == "BIO":
+                        raise InvalidTagSequence(tag_sequence)
+                    stack.append(label)
+                else:
+                    # check if the previous type is the same as this one
+                    this_type = label.partition("-")[2]
+                    prev_type = stack[-1].partition("-")[2]
+                    if this_type == prev_type:
+                        stack.append(label)
+                    else:
+                        if encoding == "BIO":
+                            raise InvalidTagSequence(tag_sequence)
+                        # a new entity
+                        process_stack(stack, bioul_sequence)
+                        stack.append(label)
+            elif label[0] == "B":
+                if len(stack) > 0:
+                    process_stack(stack, bioul_sequence)
+                stack.append(label)
+            else:
+                raise InvalidTagSequence(tag_sequence)
+
+        # process the stack
+        if len(stack) > 0:
+            process_stack(stack, bioul_sequence)
+
+        return bioul_sequence
+
+    def trans_to_bioul(self):
+        for idx, en in enumerate(self.entities):
+            if len(en)>0:
+                self.entities[idx] = self.to_bioul(en, 'IOB1')
+        #  pdb.set_trace()
 
     def _iob1_start_of_chunk(
         self, 
@@ -324,6 +461,7 @@ class HMM:
             curr_conll_tag = string_tag[2:]
 
             if curr_bio_tag not in ["B", "I", "O"]:
+                #  pdb.set_trace()
                 raise InvalidTagSequence(tag_sequence)
             if curr_bio_tag == "O" or curr_conll_tag in classes_to_ignore:
                 # The span has ended.
@@ -524,6 +662,9 @@ def accuracy(org_ent, pred_ent):
     """
     true = 0
 
+    #  pdb.set_trace()
+    org_ent = [self.to_bioul(x, 'IOB1') for x in org_ent]
+    #  pdb.set_trace()
     org = [item for sublist in org_ent for item in sublist]
     pred = [item for sublist in pred_ent for item in sublist]
 
@@ -553,7 +694,7 @@ def main():
     print("test_entities  and result shape: {} {}".format(len(test_entities), len(res)))
     metrics = hmm.get_metric(test_entities, res)
     print(metrics)
-    print("Acc: {}".format(accuracy(org_ent=test_entities, pred_ent=res)))
+    #  print("Acc: {}".format(accuracy(org_ent=test_entities, pred_ent=res)))
 
 
 main()
