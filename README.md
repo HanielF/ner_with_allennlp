@@ -31,7 +31,7 @@
 1. clone到本地
     - `git clone https://github.com/HanielF/ner_with_allennlp.git`
 2. 主要依赖环境介绍：
-    - python= 3.7
+    - python== 3.7
     - pytorch== 1.8.1
     - allennlp== 2.4.0
     - allennlp-models==2.4.0
